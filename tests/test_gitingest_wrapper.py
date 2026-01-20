@@ -30,11 +30,11 @@ class TestParseGitHubUrl:
 class TestAnalyzeRepo:
     """测试仓库分析功能。"""
 
-    @patch("server.gitingest_wrapper.ingest")
+    @patch("server.gitingest_wrapper.ingest_async")
     def test_analyze_repo_basic(self, mock_ingest):
         """测试基本仓库分析。"""
-        # Mock the ingest function
-        # Note: tree with 2 lines (file1.py\nfile2.py) has 1 newline, so total_files = 1
+        # Mock the ingest_async function
+        # Note: tree with 3 lines (file1.py\nfile2.py\nfile3.py) has 3 non-empty lines
         mock_ingest.return_value = ("Test summary", "file1.py\nfile2.py\nfile3.py", "Content here")
 
         result = analyze_repo("https://github.com/owner/repo")
@@ -44,9 +44,9 @@ class TestAnalyzeRepo:
         assert "content" in result
         assert "metadata" in result
         assert result["summary"]["repo_name"] == "owner/repo"
-        assert result["summary"]["total_files"] == 2  # 2 newlines for 3 files
+        assert result["summary"]["total_files"] == 3  # 3 non-empty lines
 
-    @patch("server.gitingest_wrapper.ingest")
+    @patch("server.gitingest_wrapper.ingest_async")
     def test_analyze_repo_with_subdirectory(self, mock_ingest):
         """测试子目录分析。"""
         mock_ingest.return_value = ("Test summary", "file.py", "Content")
@@ -58,12 +58,12 @@ class TestAnalyzeRepo:
 
         assert "summary" in result
         assert result["summary"]["repo_name"] == "coderamp-labs/gitingest"
-        # Verify the URL passed to ingest
+        # Verify the URL passed to ingest_async
         mock_ingest.assert_called_once()
         call_url = mock_ingest.call_args[0][0]
         assert "README.md" in call_url
 
-    @patch("server.gitingest_wrapper.ingest")
+    @patch("server.gitingest_wrapper.ingest_async")
     def test_analyze_repo_with_github_token(self, mock_ingest):
         """测试带 GitHub token 的分析。"""
         mock_ingest.return_value = ("Summary", "tree", "content")
@@ -87,7 +87,7 @@ class TestAnalyzeRepo:
         with pytest.raises(ValueError, match="Invalid GitHub URL"):
             analyze_repo("not-a-url")
 
-    @patch("server.gitingest_wrapper.ingest")
+    @patch("server.gitingest_wrapper.ingest_async")
     def test_analyze_repo_network_error(self, mock_ingest):
         """测试网络错误处理。"""
         # Simulate network error from gitingest

@@ -5,7 +5,6 @@ import asyncio
 from gitingest import ingest_async
 from typing import Optional, Dict, Any
 import re
-from concurrent.futures import ThreadPoolExecutor
 
 
 def _parse_github_url(url: str) -> tuple[str, Optional[str]]:
@@ -37,7 +36,8 @@ def analyze_repo(
     url: str,
     subdirectory: Optional[str] = None,
     github_token: Optional[str] = None,
-    default_branch: Optional[str] = None
+    default_branch: Optional[str] = None,
+    timeout: int = 120
 ) -> Dict[str, Any]:
     """
     分析 GitHub 仓库。
@@ -47,6 +47,7 @@ def analyze_repo(
         subdirectory: 可选的子目录路径
         github_token: 可选的 GitHub token（用于私有仓库）
         default_branch: 可选的默认分支名（默认为 'main'，也可指定为 'master' 等）
+        timeout: 超时时间（秒），默认为 120
 
     Returns:
         包含 summary, tree, content, metadata 的字典
@@ -80,10 +81,9 @@ def analyze_repo(
             if loop.is_running():
                 # 在新线程中运行以避免事件循环冲突
                 import threading
+                import traceback
                 result = {}
                 exception = None
-                import sys
-                import traceback
 
                 def run_ingest():
                     nonlocal exception
@@ -91,17 +91,13 @@ def analyze_repo(
                         new_loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(new_loop)
                         coro = ingest_async(full_url)
-                        print(f"[DEBUG] Thread loop created, coroutine: {type(coro)}")
                         try:
                             r = new_loop.run_until_complete(coro)
                             result['data'] = r
-                            print(f"[DEBUG] Thread completed successfully")
                         except Exception as e:
-                            print(f"[DEBUG] run_until_complete failed: {e}")
                             traceback.print_exc()
                             exception = e
                     except Exception as e:
-                        print(f"[DEBUG] Thread outer exception: {e}")
                         traceback.print_exc()
                         exception = e
                     finally:
@@ -109,14 +105,14 @@ def analyze_repo(
 
                 thread = threading.Thread(target=run_ingest)
                 thread.start()
-                thread.join(timeout=120)  # 120秒超时
+                thread.join(timeout=timeout)
 
-                print(f"[DEBUG] Thread joined. Has data: {'data' in result}, Has exception: {exception is not None}")
-
+                if thread.is_alive():
+                    raise RuntimeError(f"Ingest timed out after {timeout} seconds")
                 if exception:
                     raise exception
                 if 'data' not in result:
-                    raise RuntimeError("Ingest timed out or failed")
+                    raise RuntimeError("Ingest failed")
 
                 summary, tree, content = result['data']
             else:
