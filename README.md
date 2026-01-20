@@ -22,28 +22,119 @@ pip install -e .
 python -m server.main
 ```
 
-### Docker 运行
+### 云服务器部署
+
+#### 方案 1: Docker 部署（推荐）
 
 ```bash
+# 1. 克隆项目
+git clone https://github.com/tunanet/gitingest-mcp.git
+cd gitingest-mcp
+
+# 2. 构建镜像
 docker build -t gitingest-mcp .
-docker run -p 8000:8000 gitingest-mcp
+
+# 3. 运行容器
+docker run -d \
+  --name gitingest-mcp \
+  -p 8000:8000 \
+  -e GITHUB_TOKEN=your_token_if_needed \
+  --restart unless-stopped \
+  gitingest-mcp
 ```
 
-### 云平台部署
+#### 方案 2: Docker Compose（适合管理）
 
-支持部署到 Railway、Render、Fly.io 等平台。
+创建 `docker-compose.yml`:
 
-**Railway 部署：**
+```yaml
+version: '3.8'
+services:
+  gitingest-mcp:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    restart: unless-stopped
+```
+
+运行:
+```bash
+docker-compose up -d
+```
+
+#### 方案 3: Systemd 守护进程
 
 ```bash
+# 1. 安装依赖
+pip install -e .
+
+# 2. 创建 systemd 服务
+sudo nano /etc/systemd/system/gitingest-mcp.service
+```
+
+添加内容:
+```ini
+[Unit]
+Description=Gitingest MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=your_user
+WorkingDirectory=/path/to/gitingest-mcp
+Environment="PORT=8000"
+ExecStart=/usr/bin/python -m server.main
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启动服务:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable gitingest-mcp
+sudo systemctl start gitingest-mcp
+```
+
+#### 方案 4: PaaS 平台（最简单）
+
+**Railway:**
+```bash
+npm install -g railway
+railway login
 railway up
 ```
 
-**Render 部署：**
+**Render:**
+1. 在 Render Dashboard 创建新的 Web Service
+2. 连接 GitHub 仓库 `tunanet/gitingest-mcp`
+3. 设置构建命令: `pip install -e . && uvicorn server.main:app --host 0.0.0.0 --port $PORT`
 
-1. 连接 GitHub 仓库
-2. 设置构建命令：`pip install -e . && uvicorn server.main:app --host 0.0.0.0 --port $PORT`
-3. 部署完成后获取 URL
+**Fly.io:**
+```bash
+fly launch
+fly deploy
+```
+
+#### 反向代理（可选）
+
+如果使用域名，配置 Nginx:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
 
 ## 在 Claude Code 中注册
 
