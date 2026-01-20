@@ -52,6 +52,10 @@ AVAILABLE_TOOLS = [
                 "default_branch": {
                     "type": "string",
                     "description": "可选：默认分支名（默认为 main）"
+                },
+                "include_patterns": {
+                    "type": "string",
+                    "description": "可选：文件包含模式（逗号分隔），如 '*.md,*.json,*.yaml' 用于只获取文档和配置文件"
                 }
             },
             "required": ["url"]
@@ -98,7 +102,8 @@ def handle_tools_call(params: Dict[str, Any]) -> Dict[str, Any]:
             url=arguments.get("url"),
             subdirectory=arguments.get("subdirectory"),
             github_token=arguments.get("github_token"),
-            default_branch=arguments.get("default_branch")
+            default_branch=arguments.get("default_branch"),
+            include_patterns=arguments.get("include_patterns")
         )
         return {
             "content": [{"type": "text", "text": str(result)}]

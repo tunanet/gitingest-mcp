@@ -37,7 +37,8 @@ def analyze_repo(
     subdirectory: Optional[str] = None,
     github_token: Optional[str] = None,
     default_branch: Optional[str] = None,
-    timeout: int = 120
+    timeout: int = 120,
+    include_patterns: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     分析 GitHub 仓库。
@@ -48,6 +49,7 @@ def analyze_repo(
         github_token: 可选的 GitHub token（用于私有仓库）
         default_branch: 可选的默认分支名（默认为 'main'，也可指定为 'master' 等）
         timeout: 超时时间（秒），默认为 120
+        include_patterns: 可选的文件包含模式（逗号分隔），如 "*.md,*.json,*.yaml"
 
     Returns:
         包含 summary, tree, content, metadata 的字典
@@ -90,7 +92,7 @@ def analyze_repo(
                     try:
                         new_loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(new_loop)
-                        coro = ingest_async(full_url)
+                        coro = ingest_async(full_url, include_patterns=include_patterns)
                         try:
                             r = new_loop.run_until_complete(coro)
                             result['data'] = r
@@ -116,10 +118,10 @@ def analyze_repo(
 
                 summary, tree, content = result['data']
             else:
-                summary, tree, content = loop.run_until_complete(ingest_async(full_url))
+                summary, tree, content = loop.run_until_complete(ingest_async(full_url, include_patterns=include_patterns))
         except RuntimeError:
             # 没有事件循环，创建新的
-            summary, tree, content = asyncio.run(ingest_async(full_url))
+            summary, tree, content = asyncio.run(ingest_async(full_url, include_patterns=include_patterns))
 
     finally:
         # 恢复原始状态
