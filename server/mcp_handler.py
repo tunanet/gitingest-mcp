@@ -55,7 +55,11 @@ AVAILABLE_TOOLS = [
                 },
                 "include_patterns": {
                     "type": "string",
-                    "description": "可选：文件包含模式（逗号分隔），如 '*.md,*.json,*.yaml' 用于只获取文档和配置文件"
+                    "description": "可选：文件包含模式（逗号分隔）。默认使用文档模式（md,json,toml,yaml等）。设置为 'all' 分析所有文件。"
+                },
+                "fallback_to_readme": {
+                    "type": "boolean",
+                    "description": "可选：强制只分析 README 文件。默认为自动检测，当内容超过 256k token 时自动降级到 README 模式。"
                 }
             },
             "required": ["url"]
@@ -103,7 +107,8 @@ def handle_tools_call(params: Dict[str, Any]) -> Dict[str, Any]:
             subdirectory=arguments.get("subdirectory"),
             github_token=arguments.get("github_token"),
             default_branch=arguments.get("default_branch"),
-            include_patterns=arguments.get("include_patterns")
+            include_patterns=arguments.get("include_patterns"),
+            fallback_to_readme=arguments.get("fallback_to_readme")
         )
         return {
             "content": [{"type": "text", "text": str(result)}]
