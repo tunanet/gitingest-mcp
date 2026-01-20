@@ -1,9 +1,11 @@
 """gitingest 库的封装。"""
 
 import os
-from gitingest import ingest
+import asyncio
+from gitingest import ingest_async
 from typing import Optional, Dict, Any
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 
 def _parse_github_url(url: str) -> tuple[str, Optional[str]]:
@@ -71,7 +73,58 @@ def analyze_repo(
         else:
             full_url = url
 
-        summary, tree, content = ingest(full_url)
+        # 使用 ingest_async 并处理事件循环
+        try:
+            loop = asyncio.get_event_loop()
+            # 如果已经有运行中的事件循环，使用 run_until_complete
+            if loop.is_running():
+                # 在新线程中运行以避免事件循环冲突
+                import threading
+                result = {}
+                exception = None
+                import sys
+                import traceback
+
+                def run_ingest():
+                    nonlocal exception
+                    try:
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        coro = ingest_async(full_url)
+                        print(f"[DEBUG] Thread loop created, coroutine: {type(coro)}")
+                        try:
+                            r = new_loop.run_until_complete(coro)
+                            result['data'] = r
+                            print(f"[DEBUG] Thread completed successfully")
+                        except Exception as e:
+                            print(f"[DEBUG] run_until_complete failed: {e}")
+                            traceback.print_exc()
+                            exception = e
+                    except Exception as e:
+                        print(f"[DEBUG] Thread outer exception: {e}")
+                        traceback.print_exc()
+                        exception = e
+                    finally:
+                        new_loop.close()
+
+                thread = threading.Thread(target=run_ingest)
+                thread.start()
+                thread.join(timeout=120)  # 120秒超时
+
+                print(f"[DEBUG] Thread joined. Has data: {'data' in result}, Has exception: {exception is not None}")
+
+                if exception:
+                    raise exception
+                if 'data' not in result:
+                    raise RuntimeError("Ingest timed out or failed")
+
+                summary, tree, content = result['data']
+            else:
+                summary, tree, content = loop.run_until_complete(ingest_async(full_url))
+        except RuntimeError:
+            # 没有事件循环，创建新的
+            summary, tree, content = asyncio.run(ingest_async(full_url))
+
     finally:
         # 恢复原始状态
         if original_token is None:
