@@ -7,6 +7,8 @@ from enum import Enum
 
 class MCPMessageType(str, Enum):
     """MCP 消息类型。"""
+    INITIALIZE = "initialize"
+    INITIALIZED = "notifications/initialized"
     TOOLS_LIST = "tools/list"
     TOOLS_CALL = "tools/call"
     PROMPTS_LIST = "prompts/list"
@@ -129,6 +131,26 @@ def handle_prompts_get(params: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError(f"Unknown prompt: {prompt_name}")
 
 
+def handle_initialize(params: Dict[str, Any]) -> Dict[str, Any]:
+    """处理 initialize 请求。"""
+    return {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {
+            "tools": {},
+            "prompts": {}
+        },
+        "serverInfo": {
+            "name": "gitingest-mcp",
+            "version": "0.1.0"
+        }
+    }
+
+
+def handle_initialized() -> Dict[str, Any]:
+    """处理 initialized 通知。"""
+    return {}
+
+
 def handle_mcp_request(request: Dict[str, Any]) -> Dict[str, Any]:
     """
     处理 MCP 请求。
@@ -147,7 +169,11 @@ def handle_mcp_request(request: Dict[str, Any]) -> Dict[str, Any]:
     error = None
 
     try:
-        if method == MCPMessageType.TOOLS_LIST:
+        if method == MCPMessageType.INITIALIZE:
+            result = handle_initialize(params)
+        elif method == MCPMessageType.INITIALIZED:
+            result = handle_initialized()
+        elif method == MCPMessageType.TOOLS_LIST:
             result = handle_tools_list()
         elif method == MCPMessageType.TOOLS_CALL:
             result = handle_tools_call(params)
