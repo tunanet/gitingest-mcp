@@ -1,0 +1,13 @@
+.git
+.gitignore
+.worktrees
+__pycache__
+*.pyc
+.env
+.venv
+venv
+pytest
+.pytest_cache
+.coverage
+docs
+*.md
