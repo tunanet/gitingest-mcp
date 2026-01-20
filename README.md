@@ -12,19 +12,34 @@ MCP HTTP 服务器，封装 [gitingest](https://github.com/coderamp-labs/gitinge
 
 ## 部署
 
-### 本地运行
-
-```bash
-# 安装依赖
-pip install -e .
-
-# 启动服务器
-python -m server.main
-```
-
 ### 云服务器部署
 
-#### 方案 1: Docker 部署（推荐）
+#### Docker Compose 部署（推荐）
+
+项目已包含 `docker-compose.yml` 配置文件，这是最简单可靠的部署方式。
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/tunanet/gitingest-mcp.git
+cd gitingest-mcp
+
+# 2. 配置环境变量（可选）
+cp .env.example .env
+# 编辑 .env 文件，设置 GITHUB_TOKEN 等变量
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 查看日志
+docker-compose logs -f
+
+# 5. 停止服务
+docker-compose down
+```
+
+#### Docker 部署
+
+如果不使用 Docker Compose，也可以直接使用 Docker 命令：
 
 ```bash
 # 1. 克隆项目
@@ -43,28 +58,9 @@ docker run -d \
   gitingest-mcp
 ```
 
-#### 方案 2: Docker Compose（适合管理）
+#### 其他部署方式
 
-创建 `docker-compose.yml`:
-
-```yaml
-version: '3.8'
-services:
-  gitingest-mcp:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-    restart: unless-stopped
-```
-
-运行:
-```bash
-docker-compose up -d
-```
-
-#### 方案 3: Systemd 守护进程
+**Systemd 守护进程：**
 
 ```bash
 # 1. 安装依赖
@@ -99,24 +95,28 @@ sudo systemctl enable gitingest-mcp
 sudo systemctl start gitingest-mcp
 ```
 
-#### 方案 4: PaaS 平台（最简单）
+**PaaS 平台：**
 
-**Railway:**
+Railway:
 ```bash
 npm install -g railway
 railway login
 railway up
 ```
 
-**Render:**
+Render:
 1. 在 Render Dashboard 创建新的 Web Service
 2. 连接 GitHub 仓库 `tunanet/gitingest-mcp`
 3. 设置构建命令: `pip install -e . && uvicorn server.main:app --host 0.0.0.0 --port $PORT`
 
-**Fly.io:**
+### 本地开发
+
 ```bash
-fly launch
-fly deploy
+# 安装依赖
+pip install -e .
+
+# 启动服务器
+python -m server.main
 ```
 
 #### 反向代理（可选）
