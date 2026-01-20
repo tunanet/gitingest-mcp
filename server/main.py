@@ -1,8 +1,8 @@
-# server/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+from server.mcp_handler import handle_mcp_request
 
 load_dotenv()
 
@@ -27,10 +27,11 @@ def health_check():
 
 
 @app.post("/mcp")
-async def mcp_endpoint(request: dict):
+async def mcp_endpoint(request: Request):
     """MCP 协议端点。"""
-    # 处理 MCP 请求的逻辑将在下一步实现
-    return {"jsonrpc": "2.0", "id": request.get("id"), "result": {}}
+    body = await request.json()
+    response = handle_mcp_request(body)
+    return response
 
 
 if __name__ == "__main__":
