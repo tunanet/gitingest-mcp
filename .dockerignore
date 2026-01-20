@@ -11,3 +11,4 @@ pytest
 .coverage
 docs
 *.md
+!README.md
