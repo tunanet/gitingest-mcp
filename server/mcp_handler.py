@@ -33,7 +33,7 @@ class Prompt(BaseModel):
 AVAILABLE_TOOLS = [
     Tool(
         name="analyze_repo",
-        description="分析 GitHub 仓库，返回代码结构、统计和完整内容",
+        description="分析 GitHub 仓库，返回摘要和完整内容",
         inputSchema={
             "type": "object",
             "properties": {

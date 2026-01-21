@@ -71,7 +71,7 @@ def _ingest_with_retry(
     summary, tree, content = _run_ingest(full_url, include_patterns, timeout)
 
     # 检查内容大小
-    estimated_tokens = _estimate_tokens(tree + content)
+    estimated_tokens = _estimate_tokens(content)
     logger.info(f"估算 token 数: {estimated_tokens}, 限制: {MAX_TOKEN_LIMIT}")
 
     # 如果超过限制且未强制 README 模式，自动降级
@@ -162,7 +162,7 @@ def analyze_repo(
         fallback_to_readme: 可选，强制只分析 README。如未指定，当内容超过 256k token 时自动降级。
 
     Returns:
-        包含 summary, tree, content, metadata 的字典
+        包含 summary, content, metadata 的字典
 
     Raises:
         ValueError: 如果 URL 格式无效
@@ -217,18 +217,14 @@ def analyze_repo(
             os.environ["GITHUB_TOKEN"] = original_token
 
     # 构建返回结果
-    # 正确计算文件数：tree 中每行代表一个文件或目录
-    file_count = len([line for line in tree.split('\n') if line.strip()])
-    estimated_tokens = _estimate_tokens(tree + content)
+    estimated_tokens = _estimate_tokens(content)
 
     return {
         "summary": {
             "repo_name": repo_path,
             "description": summary,
-            "total_files": file_count,
             "estimated_tokens": estimated_tokens,
         },
-        "tree": tree,
         "content": content,
         "metadata": {
             "source_url": full_url,
