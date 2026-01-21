@@ -5,7 +5,7 @@
 
 ## ✨ 功能特性
 
-- **GitHub 仓库分析** - 通过 MCP 协议获取仓库结构、统计和完整内容
+- **GitHub 仓库分析** - 通过 MCP 协议获取仓库摘要和完整内容
 - **智能文件过滤** - 默认分析文档文件（md, json, toml, yaml 等）
 - **256k Token 自动降级** - 超过限制时自动切换到 README-only 模式
 - **私有仓库支持** - 通过 GitHub token 访问私有仓库
@@ -204,10 +204,8 @@ graph LR
   "summary": {
     "repo_name": "owner/repo",
     "description": "仓库描述...",
-    "total_files": 42,
     "estimated_tokens": 15000
   },
-  "tree": "目录结构树...",
   "content": "文件内容...",
   "metadata": {
     "source_url": "https://github.com/owner/repo",
